@@ -1,5 +1,5 @@
 
-from langchain.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI
 
 def create_agent_llm(
     model: str = "Qwen/Qwen2.5-Coder-7B-Instruct",
