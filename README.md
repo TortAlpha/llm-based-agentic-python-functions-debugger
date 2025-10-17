@@ -1,53 +1,53 @@
 # LLM-Based Agentic Python Functions Debugger
 
-Автоматическая система исправления багов в Python коде на основе LLM-агента с использованием LangGraph.
+An automatic system for fixing bugs in Python code based on an LLM agent using LangGraph.
 
-## 🎯 Описание
+## Description
 
-Этот проект представляет собой агентную систему для автоматического обнаружения и исправления ошибок в Python коде. Агент использует локальную LLM модель (qwen2.5-coder-7b-instruct через LM Studio) для итеративного тестирования кода, анализа ошибок и предложения исправлений до тех пор, пока все тесты не будут пройдены или не достигнут лимит итераций.
+This project is an agentic system for automatic detection and fixing of bugs in Python code. The agent uses a local LLM model (qwen2.5-coder-7b-instruct via LM Studio) for iterative code testing, error analysis, and generating fixes until all tests pass or the iteration limit is reached.
 
-### Ключевые особенности:
+### Key Features:
 
-- **Агентный подход**: Использует LangGraph для построения графа с узлами рассуждений и выполнения инструментов
-- **Итеративное исправление**: До 7 попыток на исправление одной задачи
-- **Автоматическое тестирование**: Каждое исправление автоматически тестируется с предоставленными тестами
-- **Безопасное выполнение**: Код выполняется в изолированной среде с таймаутом
-- **Анализ ошибок**: Встроенный анализатор для понимания типов ошибок
+- **Agentic Approach**: Uses LangGraph to build a graph with reasoning and tool execution nodes
+- **Iterative Fixing**: Up to 7 attempts to fix a single problem
+- **Automatic Testing**: Each fix is automatically tested with provided test cases
+- **Safe Execution**: Code runs in an isolated environment with timeout protection
+- **Error Analysis**: Built-in analyzer for understanding error types
 
-## 📊 Метрики производительности
+## Performance Metrics
 
-На датасете HumanEvalFix (50 задач):
+On HumanEvalFix dataset (50 problems):
 
-- **Pass@1**: ~42% - процент задач, где агент нашёл правильное решение (независимо от количества попыток)
-- **First Submission Accuracy**: ~30-40% - процент задач, где первый сабмит был корректным
-- **Максимум итераций**: 7 попыток на задачу
+- **Pass@1**: ~42% - percentage of problems where the agent found a correct solution (regardless of number of attempts)
+- **First Submission Accuracy**: ~30-40% - percentage of problems where the first submission was correct
+- **Maximum Iterations**: 7 attempts per problem (tested for 5 iterations metric is same)
 
-## 🏗️ Архитектура
+## Architecture
 
-### Компоненты системы:
+### System Components:
 
 1. **Agent Node** (`agent/agent.py`)
-   - Основной узел рассуждений агента
-   - Анализирует код и планирует исправления
-   - Взаимодействует с LLM для генерации решений
-   - Использует специальные маркеры `<<<FIXED_CODE_START>>>` и `<<<FIXED_CODE_END>>>` для выделения исправленного кода
+   - Main reasoning node of the agent
+   - Analyzes code and plans fixes
+   - Interacts with LLM to generate solutions
+   - Uses special markers `<<<FIXED_CODE_START>>>` and `<<<FIXED_CODE_END>>>` to highlight fixed code
 
 2. **Tools Node** (`agent/agent.py`)
-   - Выполняет вызовы инструментов (тестирование, анализ ошибок)
-   - Автоматически тестирует каждый новый вариант исправленного кода
-   - Собирает результаты выполнения и статистику
-   - Формирует обратную связь для агента
+   - Executes tool calls (testing, error analysis)
+   - Automatically tests each new version of fixed code
+   - Collects execution results and statistics
+   - Forms feedback for the agent
 
 3. **State** (`agent/state.py`)
-   - Расширенное состояние на базе `MessagesState` из LangGraph
-   - Хранит историю сообщений, попыток исправления и результатов тестирования
-   - Отслеживает количество итераций и статус решения задачи
+   - Extended state based on `MessagesState` from LangGraph
+   - Stores message history, fix attempts, and test results
+   - Tracks iteration count and problem resolution status
 
-4. **Tools** (инструменты):
-   - **python_code_executor** (`tools/python_code_executor.py`) - безопасное выполнение Python кода в изолированной среде с таймаутом 10 секунд
-   - **error_analyzer** (`tools/error_analyzer.py`) - анализ типов ошибок и предложение потенциальных решений
+4. **Tools**:
+   - **python_code_executor** (`tools/python_code_executor.py`) - safe Python code execution in isolated environment with 10-second timeout
+   - **error_analyzer** (`tools/error_analyzer.py`) - error type analysis and potential solution suggestions
 
-### Граф работы агента:
+### Agent Workflow Graph:
 
 ```
 START → agent_node → should_continue → tools_node → agent_node → ... → END
@@ -55,63 +55,63 @@ START → agent_node → should_continue → tools_node → agent_node → ... �
                          end
 ```
 
-**Логика переходов:**
-- `should_continue()` проверяет:
-  - Достигнут ли лимит итераций
-  - Исправлен ли код (`is_fixed == True`)
-  - Есть ли непроверенный кандидат на исправление
-  - Есть ли вызовы инструментов от LLM
-- Если задача решена или достигнут лимит → переход на `END`
-- Если есть работа для инструментов → переход на `tools_node`
-- Иначе → переход на `END`
+**Transition Logic:**
+- `should_continue()` checks:
+  - Has iteration limit been reached
+  - Is code fixed (`is_fixed == True`)
+  - Is there an untested fix candidate
+  - Are there tool calls from LLM
+- If problem is solved or limit reached → transition to `END`
+- If there's work for tools → transition to `tools_node`
+- Otherwise → transition to `END`
 
-## 🚀 Установка
+## 🚀 Installation
 
-### Предварительные требования:
+### Prerequisites:
 
 - Python 3.9+
-- LM Studio (для локального запуска LLM)
-- Модель qwen2.5-coder:7b-instruct в LM Studio
+- LM Studio (for local LLM execution)
+- qwen2.5-coder:7b-instruct model in LM Studio
 
-### Шаги установки:
+### Installation Steps:
 
 ```bash
-# 1. Клонируйте репозиторий
+# 1. Clone the repository
 git clone https://github.com/yourusername/llm-based-agentic-python-functions-debugger.git
 cd llm-based-agentic-python-functions-debugger
 
-# 2. Создайте виртуальное окружение
+# 2. Create virtual environment
 python -m venv venv
 source venv/bin/activate  # Linux/macOS
-# или
+# or
 venv\Scripts\activate  # Windows
 
-# 3. Установите зависимости
+# 3. Install dependencies
 pip install -r requirements.txt
 
-# 4. Для работы прогресс-баров в Jupyter Notebook/Lab
+# 4. For progress bars in Jupyter Notebook/Lab
 pip install ipywidgets jupyterlab-widgets
 
-# 5. Настройте переменные окружения
+# 5. Configure environment variables
 cp .env.example .env
-# Отредактируйте .env файл и укажите параметры подключения к LM Studio
+# Edit .env file and specify LangSmith API key for logs
 ```
 
-### Настройка LM Studio:
+### LM Studio Setup:
 
-1. Скачайте и установите [LM Studio](https://lmstudio.ai/)
-2. Загрузите модель `qwen2.5-coder:7b-instruct`
-3. Запустите локальный сервер (обычно на `http://localhost:1234`)
-4. Убедитесь, что модель поддерживает function calling
+1. Download and install [LM Studio](https://lmstudio.ai/)
+2. Load the `qwen2.5-coder:7b-instruct` model
+3. Start the local server (usually at `http://localhost:1234`)
+4. Ensure the model supports function calling
 
-## 📝 Конфигурация
+## Configuration
 
-Создайте файл `.env` в корне проекта:
+Create a `.env` file in the project root:
 
 ```env
 # LLM Configuration
 OPENAI_API_BASE=http://localhost:1234/v1
-OPENAI_API_KEY=lm-studio  # Любое значение для LM Studio
+OPENAI_API_KEY=lm-studio  # Any value for LM Studio
 MODEL_NAME=qwen2.5-coder-7b-instruct
 
 # Agent Configuration
@@ -119,25 +119,25 @@ MAX_ITERATIONS=7
 TIMEOUT_SECONDS=10
 ```
 
-## 💻 Использование
+## Usage
 
-### Базовое использование через Python:
+### Basic Usage via Python:
 
 ```python
 from graph import create_debug_agent_graph
 from agent.state import DebugAgentState
 from langchain_core.messages import HumanMessage
 
-# Создайте граф агента
+# Create agent graph
 graph = create_debug_agent_graph()
 
-# Подготовьте данные
+# Prepare data
 buggy_code = """
 def has_close_elements(numbers, threshold):
     for idx, elem in enumerate(numbers):
         for idx2, elem2 in enumerate(numbers):
             if idx != idx2:
-                distance = elem - elem2  # BUG: должно быть abs(elem - elem2)
+                distance = elem - elem2  # BUG: should be abs(elem - elem2)
                 if distance < threshold:
                     return True
     return False
@@ -151,7 +151,7 @@ def check(has_close_elements):
 check(has_close_elements)
 """
 
-# Запустите исправление
+# Run the fix
 user_message = f"Fix the following Python code:\n{buggy_code} and for testing use this code: \n{test_code}"
 
 initial_state = {
@@ -169,28 +169,28 @@ initial_state = {
 
 final_state = graph.invoke(initial_state)
 
-print(f"✅ Код исправлен: {final_state['is_fixed']}")
-print(f"📊 Использовано итераций: {final_state['iterations']}")
-print(f"📝 Исправленный код:\n{final_state['fixed_code']}")
+print(f"Code fixed: {final_state['is_fixed']}")
+print(f"Iterations used: {final_state['iterations']}")
+print(f"Fixed code:\n{final_state['fixed_code']}")
 ```
 
-### Использование через Jupyter Notebook:
+### Usage via Jupyter Notebook:
 
-Откройте `evaluation/humanevalfix_eval.ipynb` и выполните ячейки для:
+Open `evaluation/humanevalfix_eval.ipynb` and execute cells to:
 
-1. Загрузки датасета HumanEvalFix
-2. Запуска агента на множестве задач
-3. Подсчёта метрик качества
+1. Load the HumanEvalFix dataset
+2. Run the agent on multiple problems
+3. Calculate quality metrics
 
 ```python
 from datasets import load_dataset
 from tqdm.notebook import tqdm
 
-# Загрузите датасет
+# Load dataset
 dataset = load_dataset("bigcode/humanevalpack", "python")
-problems = list(dataset["test"])[:50]  # первые 50 задач
+problems = list(dataset["test"])[:50]  # first 50 problems
 
-# Запустите оценку
+# Run evaluation
 results = []
 for problem in tqdm(problems):
     result = fix_code(
@@ -200,7 +200,7 @@ for problem in tqdm(problems):
     )
     results.append(result)
 
-# Посчитайте метрики
+# Calculate metrics
 from metrics.pass_at_k import estimate_pass_at_1, estimate_first_submission_accuracy
 
 pass_at_1 = estimate_pass_at_1(results)
@@ -210,49 +210,49 @@ print(f"Pass@1: {pass_at_1:.2%}")
 print(f"First Pass Accuracy: {first_pass_acc:.2%}")
 ```
 
-## 📁 Структура проекта
+## Project Structure
 
 ```
 llm-based-agentic-python-functions-debugger/
-├── agent/                          # Основная логика агента
+├── agent/                          # Main agent logic
 │   ├── __init__.py
-│   ├── agent.py                   # Узлы графа (agent_node, tools_node, should_continue)
-│   └── state.py                   # Определение состояния DebugAgentState
+│   ├── agent.py                   # Graph nodes (agent_node, tools_node, should_continue)
+│   └── state.py                   # DebugAgentState definition
 │
-├── tools/                          # Инструменты агента
+├── tools/                          # Agent tools
 │   ├── __init__.py
-│   ├── python_code_executor.py    # Выполнение Python кода в песочнице
-│   └── error_analyzer.py          # Анализ типов ошибок
+│   ├── python_code_executor.py    # Python code execution in sandbox
+│   └── error_analyzer.py          # Error type analysis
 │
-├── llm/                            # Конфигурация LLM
+├── llm/                            # LLM configuration
 │   ├── __init__.py
-│   └── qwen2_5_coder_7b_instruct.py  # Инициализация LLM клиента
+│   └── qwen2_5_coder_7b_instruct.py  # LLM client initialization
 │
-├── metrics/                        # Метрики оценки
+├── metrics/                        # Evaluation metrics
 │   ├── __init__.py
-│   └── pass_at_k.py               # Pass@1 и First Submission Accuracy
+│   └── pass_at_k.py               # Pass@1 and First Submission Accuracy
 │
-├── evaluation/                     # Оценка на датасетах
+├── evaluation/                     # Dataset evaluation
 │   ├── __init__.py
-│   ├── basic_test.ipynb           # Базовые тесты
-│   └── humanevalfix_eval.ipynb    # Оценка на HumanEvalFix
+│   ├── basic_test.ipynb           # Basic tests
+│   └── humanevalfix_eval.ipynb    # HumanEvalFix evaluation
 │
-├── graph.py                        # Создание LangGraph графа
-├── requirements.txt                # Зависимости проекта
-├── .env.example                    # Пример конфигурации
-└── README.md                       # Этот файл
+├── graph.py                        # LangGraph graph creation
+├── requirements.txt                # Project dependencies
+├── .env.example                    # Configuration example
+└── README.md                       # This file
 ```
 
-## 🔧 Основные функции и API
+##  Main Functions and API
 
 ### `create_debug_agent_graph()`
 
-Создаёт и компилирует граф агента для исправления кода.
+Creates and compiles the agent graph for code fixing.
 
-**Возвращает:**
-- Скомпилированный граф LangGraph
+**Returns:**
+- Compiled LangGraph graph
 
-**Пример:**
+**Example:**
 ```python
 from graph import create_debug_agent_graph
 graph = create_debug_agent_graph()
@@ -260,203 +260,165 @@ graph = create_debug_agent_graph()
 
 ### `fix_code(buggy_code, test_code="", max_iterations=7)`
 
-Высокоуровневая функция для исправления кода (определена в `evaluation/humanevalfix_eval.ipynb`).
+High-level function for fixing code (defined in `evaluation/humanevalfix_eval.ipynb`).
 
-**Параметры:**
-- `buggy_code` (str): Код с ошибками, который нужно исправить
-- `test_code` (str): Тестовый код для проверки корректности исправления
-- `max_iterations` (int): Максимальное количество попыток исправления
+**Parameters:**
+- `buggy_code` (str): Code with bugs to fix
+- `test_code` (str): Test code to verify the fix
+- `max_iterations` (int): Maximum number of fix attempts
 
-**Возвращает словарь:**
+**Returns dictionary:**
 ```python
 {
-    "fixed_code": str,           # Исправленный код (последняя версия)
-    "is_fixed": bool,            # True если все тесты прошли успешно
-    "iterations": int,           # Количество использованных итераций
-    "messages": List[Message],   # История всех сообщений в диалоге
-    "submissions": List[Dict],   # История всех попыток с результатами
-    "first_pass": bool           # True если первая попытка была успешной
+    "fixed_code": str,           # Fixed code (latest version)
+    "is_fixed": bool,            # True if all tests passed
+    "iterations": int,           # Number of iterations used
+    "messages": List[Message],   # History of all messages in dialogue
+    "submissions": List[Dict],   # History of all attempts with results
+    "first_pass": bool           # True if first attempt was successful
 }
 ```
 
-**Структура элемента submissions:**
+**Structure of submissions element:**
 ```python
 {
-    "idx": int,          # Порядковый номер попытки
-    "code": str,         # Код, который был протестирован
-    "passed": bool,      # Прошли ли тесты
-    "stderr": str        # Stderr из выполнения (если были ошибки)
+    "idx": int,          # Attempt sequence number
+    "code": str,         # Code that was tested
+    "passed": bool,      # Did tests pass
+    "stderr": str        # Stderr from execution (if errors occurred)
 }
 ```
 
 ### `python_code_executor(code: str, test_code: str = "")`
 
-Инструмент для безопасного выполнения Python кода.
+Tool for safe Python code execution.
 
-**Параметры:**
-- `code` (str): Код для выполнения
-- `test_code` (str, optional): Дополнительный тестовый код
+**Parameters:**
+- `code` (str): Code to execute
+- `test_code` (str, optional): Additional test code
 
-**Возвращает:** Строку с результатом выполнения в формате:
+**Returns:** String with execution result in format:
 ```
 STDOUT:
-<вывод программы>
+<program output>
 
 STDERR:
-<ошибки, если есть>
+<errors, if any>
 
-EXIT_CODE: <код возврата>
+EXIT_CODE: <return code>
 ```
 
 ### `error_analyzer(error_message: str, code: str)`
 
-Инструмент для анализа ошибок.
+Tool for error analysis.
 
-**Параметры:**
-- `error_message` (str): Сообщение об ошибке
-- `code` (str): Код, вызвавший ошибку
+**Parameters:**
+- `error_message` (str): Error message
+- `code` (str): Code that caused the error
 
-**Возвращает:** Строку с анализом и рекомендациями по исправлению
+**Returns:** String with analysis and fix recommendations
 
-## 📈 Метрики
+## Metrics
 
 ### Pass@1
 
-**Определение:** Процент задач, для которых агент нашёл корректное решение (независимо от количества попыток).
+**Definition:** Percentage of problems for which the agent found a correct solution (regardless of number of attempts).
 
-**Формула:**
+**Formula:**
 ```
-Pass@1 = (количество решённых задач) / (общее количество задач)
-```
-
-Задача считается решённой, если `is_fixed == True` в финальном состоянии.
-
-### First Submission Accuracy
-
-**Определение:** Процент задач, где **первая** отправленная версия кода прошла все тесты.
-
-**Формула:**
-```
-First Submission Accuracy = (количество задач с first_pass=True) / (общее количество задач)
+Pass@1 = (number of solved problems) / (total number of problems)
 ```
 
-Это более строгая метрика, показывающая качество первого решения агента без итераций.
+A problem is considered solved if `is_fixed == True` in the final state.
 
-## 🎓 Принцип работы
+### First Submission Accuracy (personal interest)
 
-### Основной цикл работы:
+**Definition:** Percentage of problems where the **first** submitted code version passed all tests.
 
-1. **Инициализация**: Пользователь предоставляет багованный код и тесты
+**Formula:**
+```
+First Submission Accuracy = (problems with first_pass=True) / (total problems)
+```
+
+This is a stricter metric showing the quality of the agent's first solution without iterations.
+
+## How It Works
+
+### Main Work Cycle:
+
+1. **Initialization**: User provides buggy code and tests
 2. **Agent Node**: 
-   - LLM анализирует код
-   - Может вызвать инструменты для тестирования или анализа
-   - Генерирует исправленную версию кода
-3. **Should Continue**: Проверяет условия продолжения работы
+   - LLM analyzes the code
+   - May call tools for testing or analysis
+   - Generates fixed code version
+3. **Should Continue**: Checks continuation conditions
 4. **Tools Node**:
-   - Выполняет вызванные инструменты
-   - Автоматически тестирует новый код с тестами
-   - Формирует фидбек для агента
-5. **Повтор**: Процесс повторяется до успеха или достижения лимита итераций
+   - Executes called tools
+   - Automatically tests new code with tests
+   - Forms feedback for the agent
+5. **Repeat**: Process repeats until success or iteration limit reached
 
-### Маркеры для кода:
+### Code Markers:
 
-Агент использует специальные маркеры для выделения исправленного кода:
+The agent uses special markers to highlight fixed code:
 
 ```python
 <<<FIXED_CODE_START>>>
 def corrected_function():
-    # исправленный код здесь
+    # fixed code here
     pass
 <<<FIXED_CODE_END>>>
 ```
 
-Система автоматически извлекает код между маркерами и отправляет на тестирование.
+The system automatically extracts code between markers and submits it for testing.
 
-## 🐛 Известные проблемы и ограничения
+## Known Issues and Limitations
 
-### 1. **Function Calling не всегда работает**
-- Локальные модели (особенно 7B параметров) хуже справляются с вызовом инструментов
-- LLM может игнорировать доступные инструменты и пытаться решить задачу без тестирования
-- **Решение**: Используйте более мощные модели (GPT-4, Claude 3.5) или добавьте принудительный первый вызов
+### 1. **Function Calling Doesn't Always Work**
+- Local models (especially 7B parameters) handle tool calling worse
+- LLM may ignore available tools and try to solve the problem without testing
+- **Solution**: Use more powerful models (GPT-4, Claude 3.5) or add forced first call
 
-### 2. **Ограничение в 7 итераций**
-- Сложные баги могут требовать больше попыток
-- **Решение**: Увеличьте `max_iterations` в конфигурации
+### 2. **7 Iterations Limit**
+- Complex bugs may require more attempts
+- **Solution**: Increase `max_iterations` in configuration
 
-### 3. **Производительность модели 7B**
-- Модель qwen2.5-coder-7b меньше и слабее, чем GPT-4
-- Может не справляться со сложными логическими ошибками
-- **Решение**: Используйте более мощные модели через API
+### 3. **7B Model Performance**
+- The qwen2.5-coder-7b model is smaller and weaker than GPT-4
+- May struggle with complex logical errors
+- **Solution**: Use more powerful models via API
 
-### 4. **Таймаут выполнения**
-- Код с бесконечными циклами прерывается через 10 секунд
-- Может быть недостаточно для некоторых задач
-- **Решение**: Увеличьте таймаут в `python_code_executor.py`
+### 4. **Execution Timeout**
+- Code with infinite loops is terminated after 10 seconds
+- May be insufficient for some tasks
+- **Solution**: Increase timeout in `python_code_executor.py`
 
-### 5. **Отсутствие кэширования**
-- Одинаковый код тестируется повторно
-- **Будущее улучшение**: Добавить кэш результатов тестирования
+### 5. **No Caching**
+- Identical code is tested repeatedly
+- **Future improvement**: Add result caching
 
-## 🚀 Планы развития
+## Dependencies
 
-- [ ] **Поддержка других LLM**: GPT-4, Claude 3.5, DeepSeek Coder
-- [ ] **Few-shot примеры**: Добавить примеры исправлений в промт
-- [ ] **Улучшение промтов**: Оптимизация системных сообщений
-- [ ] **Кэширование результатов**: Избегать повторного тестирования
-- [ ] **Расширенная аналитика**: Анализ типов ошибок и паттернов исправлений
-- [ ] **Web-интерфейс**: Удобный UI для работы с агентом
-- [ ] **Поддержка других языков**: JavaScript, TypeScript, Java
-- [ ] **Увеличение контекста**: Работа с большими файлами
-- [ ] **Метрика Pass@k**: Поддержка оценки с k попытками
+Main libraries:
 
-## 📚 Зависимости
+- **langgraph** (>=0.2.0) - graph framework for building agents
+- **langchain** (>=0.3.0) - framework for working with LLMs
+- **langchain-openai** (>=0.2.0) - integration with OpenAI-compatible APIs
+- **datasets** (>=2.14.0) - loading HuggingFace datasets
+- **python-dotenv** (>=1.0.0) - environment variable management
+- **ipywidgets** - interactive widgets for Jupyter
+- **tqdm** - progress bars
 
-Основные библиотеки:
-
-- **langgraph** (>=0.2.0) - граф-фреймворк для построения агентов
-- **langchain** (>=0.3.0) - фреймворк для работы с LLM
-- **langchain-openai** (>=0.2.0) - интеграция с OpenAI-совместимыми API
-- **datasets** (>=2.14.0) - загрузка датасетов HuggingFace
-- **python-dotenv** (>=1.0.0) - управление переменными окружения
-- **ipywidgets** - интерактивные виджеты для Jupyter
-- **tqdm** - прогресс-бары
-
-## 🔬 Оценка качества
-
-Для воспроизведения результатов:
-
-```bash
-# 1. Запустите LM Studio с моделью qwen2.5-coder:7b-instruct
-# 2. Откройте Jupyter Lab
-jupyter lab
-
-# 3. Откройте evaluation/humanevalfix_eval.ipynb
-# 4. Выполните все ячейки
-```
-
-Результаты будут включать:
-- Pass@1 метрику
-- First Submission Accuracy
-- Детальный анализ каждой задачи
-- Историю сообщений и попыток исправления
-
-## 📄 Лицензия
-
-MIT License
-
-## 👥 Автор
+## Author
 
 Roman Avanesov
 
-## 🙏 Благодарности
+## Links
 
-- [LangChain](https://github.com/langchain-ai/langchain) - мощный фреймворк для работы с LLM
-- [LangGraph](https://github.com/langchain-ai/langgraph) - граф-фреймворк для построения агентных систем
-- [HumanEvalPack](https://huggingface.co/datasets/bigcode/humanevalpack) - датасет для оценки качества исправления кода
-- [LM Studio](https://lmstudio.ai/) - удобный инструмент для запуска локальных LLM
-- [Qwen Team](https://github.com/QwenLM) - за отличную модель для работы с кодом
+- [LangChain](https://github.com/langchain-ai/langchain) - powerful framework for working with LLMs
+- [LangGraph](https://github.com/langchain-ai/langgraph) - graph framework for building agentic systems
+- [HumanEvalPack](https://huggingface.co/datasets/bigcode/humanevalpack) - dataset for evaluating code fixing quality
+- [LM Studio](https://lmstudio.ai/) - convenient tool for running local LLMs
+- [Qwen Team](https://github.com/QwenLM) - for an code-working model
 
 ---
-
-**⭐ Если проект был полезен, поставьте звезду на GitHub!**
-
