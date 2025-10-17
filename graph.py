@@ -1,10 +1,9 @@
 
 from __future__ import annotations
 from langgraph.graph import StateGraph, START, END
-from langgraph.prebuilt import ToolNode
 
 from agent.state import DebugAgentState
-from agent.agent import agent_node, should_continue, TOOLS
+from agent.agent import agent_node, should_continue, tools_node
 
 def create_debug_agent_graph():
     """Create the debugging agent graph."""
@@ -12,7 +11,7 @@ def create_debug_agent_graph():
 
     # Add nodes
     graph.add_node("agent", agent_node)
-    graph.add_node("tools", ToolNode(TOOLS))
+    graph.add_node("tools", tools_node)
 
     # Add edges
     graph.add_edge(START, "agent")

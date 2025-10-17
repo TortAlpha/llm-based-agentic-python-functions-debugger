@@ -84,50 +84,54 @@ def agent_node(state: DebugAgentState) -> Dict[str, Any]:
 
     return out
 
+
 def tools_node(state: DebugAgentState) -> Dict[str, Any]:
+    from langchain_core.messages import ToolMessage
+
     updates: Dict[str, Any] = {}
+    tool_msgs: list[Any] = []
 
     last = state["messages"][-1] if state.get("messages") else None
-    tool_msgs: list[Any] = []
+
+    # Handle regular tool calls
     if getattr(last, "tool_calls", None):
-
         for tc in last.tool_calls:
-
             if tc["name"] == python_code_executor.name:
                 args = tc["args"]
                 res = python_code_executor.invoke(args)
-                tool_msgs.append(res)
-
+                tool_msgs.append(ToolMessage(
+                    content=res,
+                    tool_call_id=tc["id"]
+                ))
             elif tc["name"] == error_analyzer.name:
                 args = tc["args"]
                 res = error_analyzer.invoke(args)
-                tool_msgs.append(res)
-
-        if tool_msgs:
-            updates["messages"] = tool_msgs
+                tool_msgs.append(ToolMessage(
+                    content=res,
+                    tool_call_id=tc["id"]
+                ))
 
     fixed_code = state.get("fixed_code", "")
-
-    # need submit when get fixed code and (no previous submission or fixed code is different from previous submission)
     need_submit = bool(fixed_code) and (
-        not state.get("submissions") or state["submissions"][-1].get("code") != fixed_code
+            not state.get("submissions") or state["submissions"][-1].get("code") != fixed_code
     )
 
     if need_submit:
-
         result = python_code_executor.invoke({
             "code": fixed_code,
             "test_code": state["test_code"]
         })
 
-        if isinstance(result, dict):
-            passed = bool(result.get("passed"))
-        else:
-            content = getattr(result, "content", "")
-            passed = "EXIT_CODE: 0" in content and not content.startswith("ERROR:")
+        content = result if isinstance(result, str) else str(result)
+        passed = "EXIT_CODE: 0" in content and not content.startswith("ERROR:")
 
-        runtime_ms = float(result.get("runtime_ms", 0.0)) if isinstance(result, dict) else 0.0
-        stderr = result.get("stderr") if isinstance(result, dict) else None
+        stderr = None
+        if "STDERR:" in content:
+            stderr_start = content.find("STDERR:") + 7
+            exit_code_pos = content.find("EXIT_CODE:", stderr_start)
+            if exit_code_pos > stderr_start:
+                stderr_text = content[stderr_start:exit_code_pos].strip()
+                stderr = stderr_text[:2000] if stderr_text else None
 
         submit_idx = state.get("submit_idx", -1) + 1
         submissions = list(state.get("submissions", []))
@@ -135,17 +139,29 @@ def tools_node(state: DebugAgentState) -> Dict[str, Any]:
             "idx": submit_idx,
             "code": fixed_code,
             "passed": passed,
-            "runtime_ms": runtime_ms,
             "stderr": (stderr[:2000] if isinstance(stderr, str) else None),
         })
+
+        # feedback for agent
+        if passed:
+            feedback = f"Test passed! The fixed code runs successfully.\n\n{content}"
+        else:
+            feedback = f"Test failed. The code still has issues:\n\n{content}"
+
+        tool_msgs.append(ToolMessage(
+            content=feedback,
+            tool_call_id="auto_test"
+        ))
 
         updates.update({
             "submit_idx": submit_idx,
             "submissions": submissions,
-
             "first_pass": passed if state.get("first_pass") is None else state["first_pass"],
             "is_fixed": passed,
         })
+
+    if tool_msgs:
+        updates["messages"] = tool_msgs
 
     return updates
 

@@ -1,24 +1,35 @@
-import math
 from typing import List, Dict, Any
 
-def estimate_pass_at_k(
-        samples: Dict[str, Any],
-        k: int
-) -> float:
+def estimate_pass_at_1(results: List[Dict[str, Any]]) -> float:
     """
-    Estimates pass@k of each problem and returns the average.
+    Calculate pass@1 metric: probability that code passes in a single attempt.
 
-    Args:
-        samples: Dict of states
-        k: k in pass@k
+    pass@1 = (number of problems solved) / (total number of problems)
 
-    Returns:
-        Average pass@k score
+    A problem is considered solved if is_fixed=True, regardless of
+    how many iterations or submissions it took.
     """
+    if not results:
+        return 0.0
 
-    def estimator(n: int, c: int) -> float:
-        if n - c < k:
-            return 1.0
-        return 1.0 - math.comb(n - c, k) / math.comb(n, k)
+    solved = sum(1 for result in results if result.get("is_fixed", False))
+    total = len(results)
 
-    return sum(estimator(n, c) for n, c in zip(num_samples, num_correct)) / len(num_samples)
+    return solved / total
+
+
+# my interest
+def estimate_first_submission_accuracy(results: List[Dict[str, Any]]) -> float:
+    """
+    Calculate first-submission accuracy: probability that the FIRST
+    code submission passes tests.
+
+    This is a stricter metric than pass@1.
+    """
+    if not results:
+        return 0.0
+
+    first_passed = sum(1 for result in results if result.get("first_pass", False))
+    total = len(results)
+
+    return first_passed / total

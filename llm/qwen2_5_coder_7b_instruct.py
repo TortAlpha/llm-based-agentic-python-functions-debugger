@@ -14,4 +14,5 @@ def create_agent_llm(
         api_key=api_key,
         temperature=temperature,
         max_tokens=4096,
+        model_kwargs={"tool_choice": "auto"}
     )

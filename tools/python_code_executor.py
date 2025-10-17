@@ -7,7 +7,7 @@ from langchain_core.tools import tool
 
 
 @tool
-def python_code_executor(code: str) -> str:
+def python_code_executor(code: str, test_code: str = "") -> str:
     """
     Safely executes Python code in a sandboxed environment and returns the output.
     Use this tool to test if the fixed code runs without errors.
@@ -18,9 +18,14 @@ def python_code_executor(code: str) -> str:
     Returns:
         Execution result with stdout, stderr, and exit status
     """
+    # Combine code with tests
+    full_code = code
+    if test_code:
+        full_code = f"{code}\n\n{test_code}"
+
     # Create a temporary file for the code
     with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
-        f.write(code)
+        f.write(full_code)
         temp_file = f.name
 
     try:
